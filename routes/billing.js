@@ -329,4 +329,59 @@ router.post('/validate-board', async (req, res) => {
     }
 });
 
+// Update bill dates for all items on a board
+router.post('/update-bill-dates', async (req, res) => {
+    try {
+        const { boardId } = req.body;
+        
+        if (!boardId) {
+            return res.status(400).json({ error: 'Board ID is required' });
+        }
+        
+        console.log(`📅 Updating bill dates for board ${boardId}`);
+        
+        const updatedCount = await mondayService.updateAllBillDates(boardId);
+        
+        res.json({
+            success: true,
+            message: `Bill dates updated for ${updatedCount} items`,
+            updatedCount
+        });
+        
+    } catch (error) {
+        console.error('❌ Error updating bill dates:', error);
+        res.status(500).json({
+            error: 'Failed to update bill dates',
+            message: error.message
+        });
+    }
+});
+
+// Update bill date for a specific item
+router.post('/update-item-bill-date', async (req, res) => {
+    try {
+        const { boardId, itemId, dateReceived, freeDays } = req.body;
+        
+        if (!boardId || !itemId) {
+            return res.status(400).json({ error: 'Board ID and Item ID are required' });
+        }
+        
+        console.log(`📅 Updating bill date for item ${itemId} on board ${boardId}`);
+        
+        await mondayService.updateBillDateForItem(boardId, itemId, dateReceived, freeDays);
+        
+        res.json({
+            success: true,
+            message: 'Item bill date updated successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ Error updating item bill date:', error);
+        res.status(500).json({
+            error: 'Failed to update item bill date',
+            message: error.message
+        });
+    }
+});
+
 module.exports = router; 

@@ -1,0 +1,52 @@
+{
+  "name": "Storage Billing App",
+  "version": "1.0.0",
+  "description": "Automated storage billing with dynamic monthly columns and invoice generation",
+  "author": "Your Name",
+  "capabilities": {
+    "boards": {
+      "view": true,
+      "edit": true
+    },
+    "columns": {
+      "view": true,
+      "edit": true
+    },
+    "items": {
+      "view": true,
+      "edit": true
+    }
+  },
+  "permissions": [
+    "boards:read",
+    "boards:write",
+    "columns:read", 
+    "columns:write",
+    "items:read",
+    "items:write",
+    "workspaces:read"
+  ],
+  "scopes": [
+    "boards:read",
+    "boards:write",
+    "columns:read",
+    "columns:write",
+    "items:read",
+    "items:write",
+    "workspaces:read"
+  ],
+  "views": [
+    {
+      "name": "Storage Billing View",
+      "type": "board_view",
+      "url": "https://your-app-url.com/board-view"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Billing Dashboard",
+      "type": "widget",
+      "url": "https://your-app-url.com/widget"
+    }
+  ]
+} 

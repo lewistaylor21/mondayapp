@@ -1,0 +1,253 @@
+/* Monday.com Board View Styles */
+.monday-board-view {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 20px;
+  background: #f6f7fb;
+  min-height: 100vh;
+}
+
+.board-header {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.board-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #323338;
+}
+
+.board-header p {
+  margin: 0;
+  color: #676879;
+  font-size: 14px;
+}
+
+.message {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-left: 4px solid;
+}
+
+.message.success {
+  background: #d4edda;
+  color: #155724;
+  border-left-color: #28a745;
+}
+
+.message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border-left-color: #dc3545;
+}
+
+.message.info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border-left-color: #17a2b8;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.monday-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+}
+
+.monday-button.primary {
+  background: #0073ea;
+  color: white;
+}
+
+.monday-button.primary:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.monday-button.secondary {
+  background: #f6f7fb;
+  color: #323338;
+  border: 1px solid #c3c6d4;
+}
+
+.monday-button.secondary:hover:not(:disabled) {
+  background: #e8eaef;
+  border-color: #a5abb3;
+}
+
+.monday-button:disabled {
+  background: #c3c6d4;
+  color: #676879;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.board-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.stat-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #676879;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-card p {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: #0073ea;
+}
+
+.items-list {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.items-list h2 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #323338;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #676879;
+  font-size: 14px;
+}
+
+.no-items {
+  text-align: center;
+  padding: 40px;
+  color: #676879;
+}
+
+.no-items p {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.item-card {
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  padding: 16px;
+  background: #fafbfc;
+  transition: all 0.2s ease;
+}
+
+.item-card:hover {
+  border-color: #0073ea;
+  box-shadow: 0 2px 8px rgba(0,115,234,0.1);
+}
+
+.item-card h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #323338;
+}
+
+.item-details p {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  color: #676879;
+  display: flex;
+  justify-content: space-between;
+}
+
+.item-details strong {
+  color: #323338;
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .monday-board-view {
+    padding: 16px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .monday-button {
+    width: 100%;
+  }
+  
+  .board-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .items-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Monday.com specific styles */
+.monday-board-view * {
+  box-sizing: border-box;
+}
+
+/* Focus states for accessibility */
+.monday-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0,115,234,0.2);
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+} 

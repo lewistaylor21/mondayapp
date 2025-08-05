@@ -12,6 +12,7 @@ class BillingService {
             DATE_OUT: 'Date Out',
             STATUS: 'Status',
             CUSTOMER_EMAIL: 'Customer Email',
+            BILL_DATE: 'Bill Date',
             BILLING_START_DATE: 'Billing Start Date',
             TOTAL_BILLABLE_DAYS: 'Total Billable Days',
             CURRENT_MONTH_BILLING: 'Current Month Billing'
@@ -20,9 +21,35 @@ class BillingService {
 
     // Calculate billing start date using formula: date received + free days
     calculateBillingStartDate(dateReceived, freeDays) {
-        if (!dateReceived || freeDays === null) return null;
+        // Validate inputs
+        if (!dateReceived) {
+            console.log('⚠️ Cannot calculate billing start date: missing date received');
+            return null;
+        }
+        
+        if (freeDays === null || freeDays === undefined) {
+            console.log('⚠️ Cannot calculate billing start date: free days is null or undefined');
+            return null;
+        }
+        
+        // Convert freeDays to number if it's a string
+        const freeDaysNumber = typeof freeDays === 'string' ? parseFloat(freeDays) : freeDays;
+        
+        if (isNaN(freeDaysNumber)) {
+            console.log(`⚠️ Cannot calculate billing start date: invalid free days value: ${freeDays}`);
+            return null;
+        }
+        
+        // Calculate billing start date
         const billingStart = moment(dateReceived);
-        billingStart.add(freeDays, 'days');
+        billingStart.add(freeDaysNumber, 'days');
+        
+        // Validate the calculated date
+        if (!billingStart.isValid()) {
+            console.error(`❌ Invalid billing start date calculated: ${billingStart.toDate()}`);
+            return null;
+        }
+        
         return billingStart.toDate();
     }
 

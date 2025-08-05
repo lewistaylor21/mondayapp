@@ -65,6 +65,22 @@ async function handleColumnValueUpdate(boardId, itemId, columnId, value, previou
             return;
         }
         
+        // Check if this is a Date Received or Free Days column update
+        const isDateReceivedColumn = columnId === 'date__1'; // Date Received column
+        const isFreeDaysColumn = columnId === 'numeric_mkqfs7n9'; // Free Days column
+        
+        if (isDateReceivedColumn || isFreeDaysColumn) {
+            console.log(`📅 Date Received or Free Days updated for item ${itemId}, updating bill date...`);
+            
+            // Extract the current values from the item
+            const itemData = mondayService.extractItemData(item);
+            const dateReceived = mondayService.parseDateFromColumn(itemData.columnValues['date__1']);
+            const freeDays = mondayService.parseNumberFromColumn(itemData.columnValues['numeric_mkqfs7n9']);
+            
+            // Update the bill date
+            await mondayService.updateBillDateForItem(boardId, itemId, dateReceived, freeDays);
+        }
+        
         // Check if this is a billing-related column update
         const isBillingColumn = await isBillingRelatedColumn(boardId, columnId);
         
@@ -113,11 +129,20 @@ async function handleItemCreated(boardId, itemId) {
             return;
         }
         
+        // Calculate and set bill date for the new item
+        const itemData = mondayService.extractItemData(item);
+        const dateReceived = mondayService.parseDateFromColumn(itemData.columnValues['date__1']);
+        const freeDays = mondayService.parseNumberFromColumn(itemData.columnValues['numeric_mkqfs7n9']);
+        
+        if (dateReceived && freeDays !== null) {
+            await mondayService.updateBillDateForItem(boardId, itemId, dateReceived, freeDays);
+            console.log(`📅 Set bill date for new item ${itemId}`);
+        }
+        
         // Calculate initial billing for the current month
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         
-        const itemData = billingService.extractItemData(item);
         const billingResult = billingService.calculateItemBilling(itemData, currentMonth, currentYear);
         
         if (billingResult) {

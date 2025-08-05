@@ -69,6 +69,7 @@ class MondayService {
             { title: 'Date Out', type: 'date' },
             { title: 'Status', type: 'status', options: ['Active', 'Scanned Out'] },
             { title: 'Customer Email', type: 'email' },
+            { title: 'Bill Date', type: 'date' }, // NEW: Bill Date column
             { title: 'Billing Start Date', type: 'formula' },
             { title: 'Total Billable Days', type: 'formula' },
             { title: 'Current Month Billing', type: 'formula' }
@@ -311,6 +312,137 @@ class MondayService {
         const monthName = moment().month(month).format('MMMM');
         const columnTitle = `${monthName} ${year} Billing`;
         return await this.getColumnIdByTitle(boardId, columnTitle);
+    }
+
+    // NEW: Calculate and update bill date for an item
+    async updateBillDateForItem(boardId, itemId, dateReceived, freeDays) {
+        try {
+            // Validate inputs
+            if (!dateReceived) {
+                console.log(`⚠️ Cannot calculate bill date for item ${itemId}: missing date received`);
+                return;
+            }
+            
+            if (freeDays === null || freeDays === undefined) {
+                console.log(`⚠️ Cannot calculate bill date for item ${itemId}: free days is null or undefined`);
+                return;
+            }
+            
+            // Convert freeDays to number if it's a string
+            const freeDaysNumber = typeof freeDays === 'string' ? parseFloat(freeDays) : freeDays;
+            
+            if (isNaN(freeDaysNumber)) {
+                console.log(`⚠️ Cannot calculate bill date for item ${itemId}: invalid free days value: ${freeDays}`);
+                return;
+            }
+
+            // Calculate bill date (date received + free days)
+            const billDate = moment(dateReceived).add(freeDaysNumber, 'days').toDate();
+            
+            // Validate the calculated bill date
+            if (!moment(billDate).isValid()) {
+                console.error(`❌ Invalid bill date calculated for item ${itemId}: ${billDate}`);
+                return;
+            }
+            
+            // Get the Bill Date column ID
+            const billDateColumnId = await this.getColumnIdByTitle(boardId, 'Bill Date');
+            
+            if (!billDateColumnId) {
+                console.error(`❌ Bill Date column not found on board ${boardId}`);
+                return;
+            }
+
+            // Update the Bill Date column
+            await this.updateItemColumnValue(itemId, billDateColumnId, billDate);
+            
+            // Log the calculation details
+            const dateReceivedFormatted = moment(dateReceived).format('YYYY-MM-DD');
+            const billDateFormatted = moment(billDate).format('YYYY-MM-DD');
+            
+            if (freeDaysNumber === 0) {
+                console.log(`✅ Updated Bill Date for item ${itemId}: ${billDateFormatted} (same as Date Received: ${dateReceivedFormatted})`);
+            } else if (freeDaysNumber > 0) {
+                console.log(`✅ Updated Bill Date for item ${itemId}: ${billDateFormatted} (${dateReceivedFormatted} + ${freeDaysNumber} days)`);
+            } else {
+                console.log(`✅ Updated Bill Date for item ${itemId}: ${billDateFormatted} (${dateReceivedFormatted} + ${freeDaysNumber} days = ${Math.abs(freeDaysNumber)} days before)`);
+            }
+            
+        } catch (error) {
+            console.error(`❌ Error updating bill date for item ${itemId}:`, error);
+        }
+    }
+
+    // NEW: Update bill dates for all items on a board
+    async updateAllBillDates(boardId) {
+        try {
+            console.log(`🔄 Updating bill dates for all items on board ${boardId}`);
+            
+            const items = await this.getBoardItems(boardId);
+            let updatedCount = 0;
+            
+            for (const item of items) {
+                const itemData = this.extractItemData(item);
+                
+                // Extract date received and free days
+                const dateReceived = this.parseDateFromColumn(itemData.columnValues['date__1']);
+                const freeDays = this.parseNumberFromColumn(itemData.columnValues['numeric_mkqfs7n9']);
+                
+                if (dateReceived && freeDays !== null) {
+                    await this.updateBillDateForItem(boardId, item.id, dateReceived, freeDays);
+                    updatedCount++;
+                }
+            }
+            
+            console.log(`✅ Updated bill dates for ${updatedCount} items on board ${boardId}`);
+            return updatedCount;
+            
+        } catch (error) {
+            console.error(`❌ Error updating bill dates for board ${boardId}:`, error);
+            throw error;
+        }
+    }
+
+    // Helper method to parse date from column value
+    parseDateFromColumn(columnValue) {
+        if (!columnValue || !columnValue.value) return null;
+        
+        try {
+            const parsed = JSON.parse(columnValue.value);
+            return parsed.date ? moment(parsed.date).toDate() : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // Helper method to parse number from column value
+    parseNumberFromColumn(columnValue) {
+        if (!columnValue || !columnValue.value) return 0;
+        
+        try {
+            const parsed = JSON.parse(columnValue.value);
+            return parsed.number || parseFloat(columnValue.text) || 0;
+        } catch (error) {
+            return parseFloat(columnValue.text) || 0;
+        }
+    }
+
+    // Helper method to extract item data
+    extractItemData(item) {
+        const columnValues = {};
+        
+        item.column_values.forEach(col => {
+            columnValues[col.id] = {
+                value: col.value,
+                text: col.text
+            };
+        });
+        
+        return {
+            id: item.id,
+            name: item.name,
+            columnValues
+        };
     }
 }
 

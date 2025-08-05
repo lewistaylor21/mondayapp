@@ -129,6 +129,7 @@ The standardized board includes the following columns:
 - **Date Out** (date column)
 - **Status** (status column)
 - **Customer Email** (email column)
+- **Bill Date** (date column) - Automatically calculated billing start date
 
 ### Calculated Columns
 - **Billing Start Date** (formula column)
@@ -161,6 +162,8 @@ The standardized board includes the following columns:
 - `POST /api/billing/calculate-last-month` - Calculate last month
 - `POST /api/billing/recalculate-all` - Recalculate all billing
 - `POST /api/billing/validate-board` - Validate board configuration
+- `POST /api/billing/update-bill-dates` - Update bill dates for all items on a board
+- `POST /api/billing/update-item-bill-date` - Update bill date for a specific item
 
 ### Invoices
 - `POST /api/invoices/generate-customer` - Generate customer invoice
@@ -183,6 +186,7 @@ The app automatically runs monthly billing calculations on the 1st of each month
 When items are created, updated, or deleted, the app automatically:
 - Recalculates billing for affected items
 - Updates monthly billing columns
+- Updates bill dates when Date Received or Free Days change
 - Triggers invoice generation when needed
 
 ### Manual Triggers
@@ -216,6 +220,39 @@ Billing Amount = Rate × CBM × Billable Days
 - **Rate**: £1 per CBM per day
 - **July 2025 Billable Days**: 24 (July 8-31)
 - **July 2025 Billing**: £1 × 1.8 × 24 = £43.20
+
+## 📅 Bill Date Feature
+
+### Automatic Bill Date Calculation
+The app automatically calculates and displays the **Bill Date** for each item, which shows when billing actually starts:
+
+- **Formula**: `Bill Date = Date Received + Free Days`
+- **Display**: Shows as a readable date in the "Bill Date" column
+- **Automation**: Updates automatically when Date Received or Free Days change
+- **Manual Update**: Can be triggered manually via API or script
+
+### Usage Examples
+
+```bash
+# Update bill dates for all items on a board
+curl -X POST http://localhost:3000/api/billing/update-bill-dates \
+  -H "Content-Type: application/json" \
+  -d '{"boardId": "your_board_id"}'
+
+# Update bill date for a specific item
+curl -X POST http://localhost:3000/api/billing/update-item-bill-date \
+  -H "Content-Type: application/json" \
+  -d '{"boardId": "your_board_id", "itemId": "123", "dateReceived": "2025-07-01", "freeDays": 7}'
+
+# Update bill dates for existing boards using script
+npm run update-bill-dates -- --board-id "your_board_id"
+```
+
+### Benefits
+- **Clear Visibility**: See exactly when billing starts for each item
+- **Automatic Updates**: No manual calculation needed
+- **Consistency**: Ensures all items follow the same billing start logic
+- **Audit Trail**: Track when billing actually begins for each customer
 
 ## 📄 Invoice Generation
 
@@ -283,6 +320,7 @@ CMD ["npm", "start"]
 - `npm run monthly-billing` - Run monthly billing automation
 - `npm run generate-invoice` - Generate invoices
 - `npm run test-billing` - Test billing calculations
+- `npm run update-bill-dates` - Update bill dates for existing boards
 
 ## 🐛 Troubleshooting
 

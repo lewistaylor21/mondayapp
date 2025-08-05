@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storage Billing App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f6f7fb;
+        }
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .app-header {
+            background: linear-gradient(135deg, #0073ea 0%, #00c875 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .app-content {
+            padding: 20px;
+        }
+        .button {
+            background: #0073ea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.secondary {
+            background: #f6f7fb;
+            color: #323338;
+            border: 1px solid #c3c6d4;
+        }
+        .button.secondary:hover {
+            background: #e8eaef;
+        }
+        .card {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html> 

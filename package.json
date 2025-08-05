@@ -12,6 +12,8 @@
     "monthly-billing": "node scripts/monthlyBillingAutomation.js",
     "generate-invoice": "node scripts/generateInvoice.js",
     "test-billing": "node scripts/testBillingCalculation.js",
+    "update-bill-dates": "node scripts/updateBillDates.js",
+    "test-bill-date": "node scripts/testBillDate.js",
     "single-item": "node singleItemBilling.js",
     "storage": "node storageBillingCalculator.js",
     "generate-test": "node generateTestData.js",
