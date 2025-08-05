@@ -1,0 +1,52 @@
+{
+  "name": "monday-storage-billing-app",
+  "version": "1.0.0",
+  "description": "Monday.com app for automated storage billing with dynamic monthly columns and invoice generation",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "node scripts/testSetup.js",
+    "create-board": "node scripts/createStandardBoard.js",
+    "setup-webhooks": "node scripts/setupWebhooks.js",
+    "monthly-billing": "node scripts/monthlyBillingAutomation.js",
+    "generate-invoice": "node scripts/generateInvoice.js",
+    "test-billing": "node scripts/testBillingCalculation.js",
+    "single-item": "node singleItemBilling.js",
+    "storage": "node storageBillingCalculator.js",
+    "generate-test": "node generateTestData.js",
+    "create-test": "node createTestItems.js"
+  },
+  "keywords": [
+    "monday.com",
+    "billing",
+    "calculator",
+    "storage",
+    "cbm",
+    "automation",
+    "webhooks",
+    "invoice",
+    "pdf"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "monday-sdk-js": "^0.1.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "pdfkit": "^0.14.0",
+    "nodemailer": "^6.9.7",
+    "node-cron": "^3.0.3",
+    "axios": "^1.6.0",
+    "uuid": "^9.0.1",
+    "moment": "^2.29.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+} 
