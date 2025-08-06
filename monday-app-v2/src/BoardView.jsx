@@ -32,18 +32,24 @@ const BoardView = () => {
       // Listen for context (board ID, authentication, etc.)
       monday.listen('context', (res) => {
         console.log('Monday.com context received:', res.data);
-        setContext(res.data);
-        setBoardId(res.data.boardId);
-        setIsAuthenticated(true);
+        const contextData = res.data;
+        
+        setContext(contextData);
         setSdkStatus('Connected to Monday.com');
         
-        // Load real board data when we have the board ID
-        if (res.data.boardId) {
-          loadRealBoardData(res.data.boardId);
+        // Check for board ID and authentication
+        if (contextData.boardId) {
+          setBoardId(contextData.boardId);
+          setIsAuthenticated(true);
+          console.log(`Loading data for board ID: ${contextData.boardId}`);
+          loadRealBoardData(contextData.boardId);
+        } else {
+          showMessage('No board context found. Please ensure the app is installed on a board.', 'error');
+          setSdkStatus('No board context');
         }
       });
 
-      // Listen for authentication
+      // Listen for authentication changes
       monday.listen('auth', (res) => {
         console.log('Monday.com auth received:', res.data);
         setIsAuthenticated(true);
@@ -68,97 +74,90 @@ const BoardView = () => {
       console.error('Error initializing Monday.com SDK:', error);
       setSdkStatus('SDK Error: ' + error.message);
       showMessage('Error initializing Monday.com SDK: ' + error.message, 'error');
-      // Fall back to demo data
-      loadDemoData();
+      // No fallback - force live data only
     }
   };
 
   const loadRealBoardData = async (boardId) => {
     try {
       setLoading(true);
-      showMessage('Loading real board data...', 'info');
+      showMessage('Loading live board data...', 'info');
       
-      // Query the Monday.com API for board items
-      const response = await monday.api(`query {
-        boards(ids: [${boardId}]) {
-          items {
+      // Enhanced query with better error handling and more board info
+      const query = `
+        query ($boardId: ID!) {
+          boards(ids: [$boardId]) {
             id
             name
-            column_values {
-              id
-              title
-              value
-              text
+            description
+            items_page(limit: 500) {
+              cursor
+              items {
+                id
+                name
+                column_values {
+                  id
+                  title
+                  type
+                  value
+                  text
+                  ... on MirrorValue {
+                    display_value
+                  }
+                  ... on StatusValue {
+                    index
+                    label
+                  }
+                  ... on NumbersValue {
+                    number
+                  }
+                  ... on DateValue {
+                    date
+                    time
+                  }
+                }
+              }
             }
           }
         }
-      }`);
+      `;
+      
+      const response = await monday.api(query, { variables: { boardId: parseInt(boardId) } });
       
       console.log('Monday.com API response:', response);
       
+      if (response.errors) {
+        throw new Error(`GraphQL Error: ${response.errors[0].message}`);
+      }
+      
       if (response.error_code) {
-        throw new Error(`Monday.com API Error: ${response.error_message}`);
+        throw new Error(`Monday.com API Error [${response.error_code}]: ${response.error_message}`);
       }
       
       if (response.data && response.data.boards && response.data.boards[0]) {
-        const boardItems = response.data.boards[0].items;
+        const board = response.data.boards[0];
+        const boardItems = board.items_page.items;
+        
+        console.log(`Board: ${board.name}, Items found:`, boardItems.length);
         setItems(boardItems);
-        showMessage(`Loaded ${boardItems.length} real items from board ${boardId}`, 'success');
+        
+        if (boardItems.length > 0) {
+          showMessage(`Loaded ${boardItems.length} items from "${board.name}"`, 'success');
+        } else {
+          showMessage(`Board "${board.name}" has no items. Add storage items to get started.`, 'info');
+        }
       } else {
-        showMessage('No items found on this board', 'info');
-        setItems([]);
+        throw new Error('Board not found or access denied');
       }
     } catch (error) {
       console.error('Error loading board data:', error);
-      showMessage('Error loading board data: ' + error.message, 'error');
-      // Fall back to demo data
-      loadDemoData();
+      setItems([]);
+      showMessage(`Failed to load board data: ${error.message}. Check console for details.`, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadDemoData = () => {
-    // Demo data as fallback
-    setItems([
-      {
-        id: '1',
-        name: 'Sample Storage Item 1',
-        column_values: [
-          { title: 'Status', text: 'Active' },
-          { title: 'CBM', text: '10.5' },
-          { title: 'Rate per CBM/Day', text: '2.50' },
-          { title: 'Date Received', text: '2024-01-15' },
-          { title: 'Bill Date', text: '2024-02-01' },
-          { title: 'Current Month Billing', text: '157.50' }
-        ]
-      },
-      {
-        id: '2',
-        name: 'Sample Storage Item 2',
-        column_values: [
-          { title: 'Status', text: 'Scanned Out' },
-          { title: 'CBM', text: '5.2' },
-          { title: 'Rate per CBM/Day', text: '3.00' },
-          { title: 'Date Received', text: '2024-01-20' },
-          { title: 'Bill Date', text: '2024-02-01' },
-          { title: 'Current Month Billing', text: '93.60' }
-        ]
-      },
-      {
-        id: '3',
-        name: 'Sample Storage Item 3',
-        column_values: [
-          { title: 'Status', text: 'Active' },
-          { title: 'CBM', text: '15.8' },
-          { title: 'Rate per CBM/Day', text: '2.75' },
-          { title: 'Date Received', text: '2024-01-25' },
-          { title: 'Bill Date', text: '2024-02-01' },
-          { title: 'Current Month Billing', text: '217.25' }
-        ]
-      }
-    ]);
-  };
 
   const showMessage = (text, type = 'info') => {
     setMessage(text);
@@ -340,7 +339,7 @@ const BoardView = () => {
       </div>
 
       <div className="items-list">
-        <h2>Storage Items {!isAuthenticated && '(Demo Data)'}</h2>
+        <h2>Storage Items</h2>
         {loading ? (
           <div className="loading">Loading items...</div>
         ) : items.length > 0 ? (

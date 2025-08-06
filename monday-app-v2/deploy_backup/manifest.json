@@ -16,7 +16,7 @@
     {
       "type": "board-view",
       "name": "Storage Billing",
-      "url": "https://v5a53a38073008e18.cdn2.monday.app/board_view.html",
+      "url": "https://v6ed24208ea9ab1b3.cdn2.monday.app/board_view.html",
       "config": {
         "height": 800,
         "width": "100%"
@@ -25,7 +25,7 @@
     {
       "type": "dashboard-widget",
       "name": "Billing Summary",
-      "url": "https://v5a53a38073008e18.cdn2.monday.app/index.html",
+      "url": "https://v6ed24208ea9ab1b3.cdn2.monday.app/index.html",
       "config": {
         "height": 400,
         "width": 400

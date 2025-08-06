@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storage Billing - Board View</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f6f7fb;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Storage Billing Dashboard</h1>
+        <p id="status">Connecting to Monday.com...</p>
+        <div id="debug"></div>
+        <div id="content"></div>
+    </div>
+
+    <script src="https://cdn.monday.com/sdk/2.0.0/monday.js"></script>
+    
+    <script>
+        console.log('Minimal app starting...');
+        
+        let monday = null;
+        let boardId = null;
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            console.log('STATUS:', message);
+        }
+        
+        function addDebug(message) {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerHTML += '<p>' + message + '</p>';
+            console.log('DEBUG:', message);
+        }
+        
+        function initApp() {
+            if (typeof window.mondaySdk === 'undefined') {
+                updateStatus('Waiting for Monday SDK...');
+                setTimeout(initApp, 100);
+                return;
+            }
+            
+            updateStatus('Monday SDK loaded, initializing...');
+            
+            try {
+                monday = window.mondaySdk();
+                monday.init();
+                
+                addDebug('SDK initialized successfully');
+                
+                monday.listen('context', (res) => {
+                    addDebug('Context received');
+                    console.log('Full context:', res);
+                    
+                    if (res.data && res.data.boardId) {
+                        boardId = res.data.boardId;
+                        updateStatus('Connected - Board ID: ' + boardId);
+                        loadBoardData(boardId);
+                    } else {
+                        updateStatus('No board ID in context, trying fallback...');
+                        loadBoardData('1953505209');
+                    }
+                });
+                
+                setTimeout(() => {
+                    if (!boardId) {
+                        updateStatus('Timeout - using manual board ID');
+                        loadBoardData('1953505209');
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                updateStatus('Error: ' + error.message);
+                addDebug('SDK Error: ' + error.message);
+            }
+        }
+        
+        async function loadBoardData(boardId) {
+            addDebug('Loading board data for: ' + boardId);
+            
+            if (!monday) {
+                addDebug('No Monday SDK available');
+                return;
+            }
+            
+            try {
+                const query = `
+                    query ($boardId: ID!) {
+                        boards(ids: [$boardId]) {
+                            id
+                            name
+                            items_page(limit: 5) {
+                                items {
+                                    id
+                                    name
+                                    column_values {
+                                        id
+                                        type
+                                        value
+                                        text
+                                    }
+                                }
+                            }
+                        }
+                    }
+                `;
+                
+                addDebug('Sending API query...');
+                const response = await monday.api(query, { variables: { boardId: parseInt(boardId) } });
+                
+                addDebug('API response received');
+                console.log('API Response:', response);
+                
+                if (response.errors) {
+                    throw new Error(response.errors[0].message);
+                }
+                
+                if (response.data && response.data.boards && response.data.boards[0]) {
+                    const board = response.data.boards[0];
+                    const items = board.items_page.items;
+                    
+                    updateStatus('SUCCESS: Loaded ' + items.length + ' items from board: ' + board.name);
+                    
+                    let html = '<h3>Board: ' + board.name + '</h3><ul>';
+                    items.forEach(item => {
+                        html += '<li><strong>' + item.name + '</strong> (ID: ' + item.id + ')</li>';
+                    });
+                    html += '</ul>';
+                    
+                    document.getElementById('content').innerHTML = html;
+                } else {
+                    updateStatus('No board data found');
+                }
+                
+            } catch (error) {
+                updateStatus('API Error: ' + error.message);
+                addDebug('Load error: ' + error.message);
+                console.error('Load error:', error);
+            }
+        }
+        
+        // Start the app
+        document.addEventListener('DOMContentLoaded', initApp);
+        if (document.readyState !== 'loading') {
+            initApp();
+        }
+    </script>
+</body>
+</html>
