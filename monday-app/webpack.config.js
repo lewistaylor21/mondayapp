@@ -1,7 +1,8 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
-module.exports = {
+module.exports = (env, argv) => ({
   entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -32,6 +33,10 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './public/index.html'
+    }),
+    new webpack.DefinePlugin({
+      'process.env.REACT_APP_BACKEND_URL': JSON.stringify(process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000'),
+      'process.env.REACT_APP_MONDAY_API_TOKEN': JSON.stringify(process.env.REACT_APP_MONDAY_API_TOKEN || '')
     })
   ],
   devServer: {
@@ -42,4 +47,4 @@ module.exports = {
     port: 3001,
     hot: true
   }
-}; 
+}); 

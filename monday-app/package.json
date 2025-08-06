@@ -6,7 +6,8 @@
   "scripts": {
     "build": "webpack --mode production",
     "dev": "webpack serve --mode development",
-    "start": "webpack serve --mode development"
+    "start": "webpack serve --mode development",
+    "deploy": "webpack --mode production && monday-code deploy"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -24,5 +25,11 @@
     "webpack": "^5.88.0",
     "webpack-cli": "^5.1.0",
     "webpack-dev-server": "^4.15.0"
+  },
+  "mondayCode": {
+    "runtime": "static",
+    "entryPoint": "public/index.html",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist"
   }
 } 

@@ -1,0 +1,33 @@
+{
+  "name": "storage-billing-app-backend",
+  "version": "1.0.0",
+  "description": "Monday.com app backend for automated storage billing",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "build": "echo 'No build step required for Node.js'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "monday-sdk-js": "^0.1.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "pdfkit": "^0.14.0",
+    "nodemailer": "^6.9.7",
+    "node-cron": "^3.0.3",
+    "axios": "^1.6.0",
+    "uuid": "^9.0.1",
+    "moment": "^2.29.4"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "mondayCode": {
+    "runtime": "nodejs",
+    "entryPoint": "app.js",
+    "environment": {
+      "NODE_ENV": "production"
+    }
+  }
+}

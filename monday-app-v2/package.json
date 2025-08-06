@@ -1,17 +1,22 @@
 {
-  "name": "storage-billing-monday-app-v2",
+  "name": "storage-billing-monday-app",
   "version": "1.0.0",
   "description": "Native Monday.com app for storage billing",
   "main": "index.js",
   "scripts": {
     "build": "webpack --mode production",
-    "dev": "webpack serve --mode development",
-    "start": "webpack serve --mode development"
+    "dev": "webpack serve --mode development --https",
+    "start": "webpack serve --mode development --https",
+    "tunnel": "ngrok http 8301 --host-header=localhost:8301",
+    "deploy": "npm run build && node deploy.js",
+    "build:dashboard": "webpack --mode production --entry ./src/index.js",
+    "build:boardview": "webpack --mode production --entry ./src/board_view.js"
   },
   "dependencies": {
+    "monday-sdk-js": "^0.5.3",
+    "monday-ui-react-core": "^2.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "monday-sdk-js": "^0.1.0"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.22.0",
@@ -25,4 +30,4 @@
     "webpack-cli": "^5.1.0",
     "webpack-dev-server": "^4.15.0"
   }
-} 
+}

@@ -1,49 +1,84 @@
 import React, { useState, useEffect } from 'react';
-import { mondaySdk } from 'monday-sdk-js';
+// Monday.com SDK loaded via CDN
 import './BoardView.css';
 
 // Initialize Monday.com SDK
-const monday = mondaySdk();
+const monday = window.mondaySdk();
 
 const BoardView = () => {
+  // Initialize Monday.com SDK
+  const monday = window.mondaySdk();
   const [context, setContext] = useState(null);
   const [boardId, setBoardId] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('info');
-
-  // Backend API URL
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sdkStatus, setSdkStatus] = useState('Initializing...');
 
   useEffect(() => {
     // Initialize Monday.com app
-    monday.init();
-    
-    // Get app context (board ID, item ID, etc.)
-    monday.listen('context', (res) => {
-      setContext(res.data);
-      setBoardId(res.data.boardId);
-      
-      // Load board items when context is available
-      if (res.data.boardId) {
-        loadBoardItems(res.data.boardId);
-      }
-    });
-
-    // Listen for board changes
-    monday.listen('board', (res) => {
-      if (res.data.boardId) {
-        setBoardId(res.data.boardId);
-        loadBoardItems(res.data.boardId);
-      }
-    });
-
+    initializeMondayApp();
   }, []);
 
-  const loadBoardItems = async (boardId) => {
+  const initializeMondayApp = () => {
+    try {
+      setSdkStatus('Initializing Monday.com SDK...');
+      
+      // Initialize the Monday.com SDK
+      monday.init();
+      
+      // Listen for context (board ID, authentication, etc.)
+      monday.listen('context', (res) => {
+        console.log('Monday.com context received:', res.data);
+        setContext(res.data);
+        setBoardId(res.data.boardId);
+        setIsAuthenticated(true);
+        setSdkStatus('Connected to Monday.com');
+        
+        // Load real board data when we have the board ID
+        if (res.data.boardId) {
+          loadRealBoardData(res.data.boardId);
+        }
+      });
+
+      // Listen for authentication
+      monday.listen('auth', (res) => {
+        console.log('Monday.com auth received:', res.data);
+        setIsAuthenticated(true);
+        setSdkStatus('Authenticated with Monday.com');
+      });
+
+      showMessage('Monday.com SDK initialized successfully!', 'success');
+      
+      // Auto-adjust height for board view
+      const adjustHeight = () => {
+        const height = document.body.scrollHeight;
+        monday.execute('setHeight', { height });
+      };
+      
+      // Adjust height on content changes
+      const resizeObserver = new ResizeObserver(adjustHeight);
+      resizeObserver.observe(document.body);
+      
+      // Initial height adjustment
+      setTimeout(adjustHeight, 100);
+    } catch (error) {
+      console.error('Error initializing Monday.com SDK:', error);
+      setSdkStatus('SDK Error: ' + error.message);
+      showMessage('Error initializing Monday.com SDK: ' + error.message, 'error');
+      // Fall back to demo data
+      loadDemoData();
+    }
+  };
+
+  const loadRealBoardData = async (boardId) => {
     try {
       setLoading(true);
+      showMessage('Loading real board data...', 'info');
+      
+      // Query the Monday.com API for board items
       const response = await monday.api(`query {
         boards(ids: [${boardId}]) {
           items {
@@ -59,14 +94,70 @@ const BoardView = () => {
         }
       }`);
       
-      if (response.data.boards[0]) {
-        setItems(response.data.boards[0].items);
+      console.log('Monday.com API response:', response);
+      
+      if (response.error_code) {
+        throw new Error(`Monday.com API Error: ${response.error_message}`);
+      }
+      
+      if (response.data && response.data.boards && response.data.boards[0]) {
+        const boardItems = response.data.boards[0].items;
+        setItems(boardItems);
+        showMessage(`Loaded ${boardItems.length} real items from board ${boardId}`, 'success');
+      } else {
+        showMessage('No items found on this board', 'info');
+        setItems([]);
       }
     } catch (error) {
-      showMessage('Error loading board items: ' + error.message, 'error');
+      console.error('Error loading board data:', error);
+      showMessage('Error loading board data: ' + error.message, 'error');
+      // Fall back to demo data
+      loadDemoData();
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadDemoData = () => {
+    // Demo data as fallback
+    setItems([
+      {
+        id: '1',
+        name: 'Sample Storage Item 1',
+        column_values: [
+          { title: 'Status', text: 'Active' },
+          { title: 'CBM', text: '10.5' },
+          { title: 'Rate per CBM/Day', text: '2.50' },
+          { title: 'Date Received', text: '2024-01-15' },
+          { title: 'Bill Date', text: '2024-02-01' },
+          { title: 'Current Month Billing', text: '157.50' }
+        ]
+      },
+      {
+        id: '2',
+        name: 'Sample Storage Item 2',
+        column_values: [
+          { title: 'Status', text: 'Scanned Out' },
+          { title: 'CBM', text: '5.2' },
+          { title: 'Rate per CBM/Day', text: '3.00' },
+          { title: 'Date Received', text: '2024-01-20' },
+          { title: 'Bill Date', text: '2024-02-01' },
+          { title: 'Current Month Billing', text: '93.60' }
+        ]
+      },
+      {
+        id: '3',
+        name: 'Sample Storage Item 3',
+        column_values: [
+          { title: 'Status', text: 'Active' },
+          { title: 'CBM', text: '15.8' },
+          { title: 'Rate per CBM/Day', text: '2.75' },
+          { title: 'Date Received', text: '2024-01-25' },
+          { title: 'Bill Date', text: '2024-02-01' },
+          { title: 'Current Month Billing', text: '217.25' }
+        ]
+      }
+    ]);
   };
 
   const showMessage = (text, type = 'info') => {
@@ -75,7 +166,7 @@ const BoardView = () => {
     setTimeout(() => setMessage(''), 5000);
   };
 
-  // Calculate billing for current month
+  // Real billing functions that call your backend
   const calculateCurrentMonthBilling = async () => {
     if (!boardId) {
       showMessage('No board selected', 'error');
@@ -85,7 +176,7 @@ const BoardView = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`${BACKEND_URL}/api/billing/calculate-current-month`, {
+      const response = await fetch('https://b4869-service-17505803-baada5af.us.monday.app/api/billing/calculate-current-month', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,8 +190,8 @@ const BoardView = () => {
       
       if (response.ok) {
         showMessage('Current month billing calculated successfully!', 'success');
-        // Refresh board items to show updated billing
-        loadBoardItems(boardId);
+        // Refresh board data to show updated billing
+        loadRealBoardData(boardId);
       } else {
         showMessage('Error calculating billing: ' + result.error, 'error');
       }
@@ -111,7 +202,6 @@ const BoardView = () => {
     }
   };
 
-  // Generate invoices for current month
   const generateInvoices = async () => {
     if (!boardId) {
       showMessage('No board selected', 'error');
@@ -121,7 +211,7 @@ const BoardView = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`${BACKEND_URL}/api/invoices/generate-current-month`, {
+      const response = await fetch('https://b4869-service-17505803-baada5af.us.monday.app/api/invoices/generate-current-month', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +235,6 @@ const BoardView = () => {
     }
   };
 
-  // Update bill dates for all items
   const updateBillDates = async () => {
     if (!boardId) {
       showMessage('No board selected', 'error');
@@ -155,7 +244,7 @@ const BoardView = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`${BACKEND_URL}/api/billing/update-bill-dates`, {
+      const response = await fetch('https://b4869-service-17505803-baada5af.us.monday.app/api/billing/update-bill-dates', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -169,8 +258,8 @@ const BoardView = () => {
       
       if (response.ok) {
         showMessage('Bill dates updated successfully!', 'success');
-        // Refresh board items to show updated bill dates
-        loadBoardItems(boardId);
+        // Refresh board data to show updated bill dates
+        loadRealBoardData(boardId);
       } else {
         showMessage('Error updating bill dates: ' + result.error, 'error');
       }
@@ -191,6 +280,8 @@ const BoardView = () => {
     <div className="monday-board-view">
       <div className="board-header">
         <h1>🏢 Storage Billing Dashboard</h1>
+        <p>SDK Status: {sdkStatus}</p>
+        <p>Authentication: {isAuthenticated ? '✅ Connected' : '❌ Not Connected'}</p>
         <p>Board ID: {boardId || 'Loading...'}</p>
       </div>
 
@@ -204,7 +295,7 @@ const BoardView = () => {
         <button 
           className="monday-button primary" 
           onClick={calculateCurrentMonthBilling}
-          disabled={loading || !boardId}
+          disabled={loading || !isAuthenticated}
         >
           {loading ? 'Calculating...' : 'Calculate Current Month Billing'}
         </button>
@@ -212,7 +303,7 @@ const BoardView = () => {
         <button 
           className="monday-button primary" 
           onClick={generateInvoices}
-          disabled={loading || !boardId}
+          disabled={loading || !isAuthenticated}
         >
           {loading ? 'Generating...' : 'Generate Invoices'}
         </button>
@@ -220,7 +311,7 @@ const BoardView = () => {
         <button 
           className="monday-button secondary" 
           onClick={updateBillDates}
-          disabled={loading || !boardId}
+          disabled={loading || !isAuthenticated}
         >
           {loading ? 'Updating...' : 'Update Bill Dates'}
         </button>
@@ -239,10 +330,17 @@ const BoardView = () => {
           <h3>Scanned Out</h3>
           <p>{items.filter(item => getColumnValue(item, 'Status') === 'Scanned Out').length}</p>
         </div>
+        <div className="stat-card">
+          <h3>Total Monthly Billing</h3>
+          <p>£{items.reduce((total, item) => {
+            const billing = parseFloat(getColumnValue(item, 'Current Month Billing')) || 0;
+            return total + billing;
+          }, 0).toFixed(2)}</p>
+        </div>
       </div>
 
       <div className="items-list">
-        <h2>Storage Items</h2>
+        <h2>Storage Items {!isAuthenticated && '(Demo Data)'}</h2>
         {loading ? (
           <div className="loading">Loading items...</div>
         ) : items.length > 0 ? (

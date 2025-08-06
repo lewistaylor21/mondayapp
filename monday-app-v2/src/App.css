@@ -1,0 +1,147 @@
+/* Monday.com App Styles */
+.monday-app {
+  background-color: var(--primary-background-color, #ffffff);
+  min-height: 100vh;
+  font-family: var(--font-family, Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto);
+}
+
+.app-header {
+  background: linear-gradient(135deg, #6161ff 0%, #5b5bff 100%);
+  color: white;
+  border-radius: 8px;
+  margin: 16px;
+}
+
+.app-header h1 {
+  color: white !important;
+}
+
+.app-header .monday-style-text {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.stat-card {
+  background: var(--primary-background-color);
+  border: 1px solid var(--ui-border-color, #e6e9ef);
+  border-radius: 8px;
+  padding: 16px;
+  flex: 1;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.status-indicator {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-indicator.positive {
+  background: #00ca72;
+  color: white;
+}
+
+.status-indicator.negative {
+  background: #fb275d;
+  color: white;
+}
+
+.status-indicator.primary {
+  background: #ffcc00;
+  color: #333;
+}
+
+.main-tabs {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.items-panel {
+  padding: 16px 0;
+}
+
+.summary-panel {
+  padding: 24px;
+}
+
+.summary-details {
+  background: var(--secondary-background-color, #f6f7fb);
+  padding: 16px;
+  border-radius: 8px;
+}
+
+/* Table customization */
+.monday-style-table {
+  width: 100%;
+}
+
+.monday-style-table-header-cell {
+  font-weight: 600;
+  color: var(--primary-text-color);
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.monday-style-table-cell {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--ui-border-color, #e6e9ef);
+}
+
+/* Loader styles */
+.monday-style-loader {
+  margin: 40px auto;
+}
+
+/* Button overrides for better integration */
+.monday-style-button {
+  transition: all 0.2s ease;
+}
+
+.monday-style-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Toast positioning */
+.monday-style-toast-component {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10000;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .stat-card {
+    min-width: 100%;
+  }
+  
+  .monday-style-flex > * {
+    flex-basis: 100%;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .monday-app {
+    background-color: #1e1e1e;
+  }
+  
+  .stat-card {
+    background: #2b2b2b;
+    border-color: #3e3e3e;
+  }
+}

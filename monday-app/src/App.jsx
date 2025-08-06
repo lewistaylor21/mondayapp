@@ -15,7 +15,7 @@ const App = () => {
   const [isMondayEnvironment, setIsMondayEnvironment] = useState(false);
 
   // Backend API URL - update this to your deployed backend
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000';
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://b4869-service-17505803-baada5af.us.monday.app';
 
   useEffect(() => {
     // Check if we're in Monday.com environment

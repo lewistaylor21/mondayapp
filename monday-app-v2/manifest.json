@@ -1,52 +1,41 @@
 {
-  "name": "Storage Billing App",
+  "name": "Storage Billing Manager",
   "version": "1.0.0",
   "description": "Automated storage billing with dynamic monthly columns and invoice generation",
-  "author": "Your Name",
-  "capabilities": {
-    "boards": {
-      "view": true,
-      "edit": true
-    },
-    "columns": {
-      "view": true,
-      "edit": true
-    },
-    "items": {
-      "view": true,
-      "edit": true
+  "author": "Your Company",
+  "apiVersion": "0.1.0",
+  "integrationTypes": ["board_view", "item_view", "dashboard_widget"],
+  "settings": {
+    "boardId": {
+      "type": "board",
+      "label": "Select Board",
+      "required": true
     }
   },
-  "permissions": [
-    "boards:read",
-    "boards:write",
-    "columns:read", 
-    "columns:write",
-    "items:read",
-    "items:write",
-    "workspaces:read"
-  ],
-  "scopes": [
-    "boards:read",
-    "boards:write",
-    "columns:read",
-    "columns:write",
-    "items:read",
-    "items:write",
-    "workspaces:read"
-  ],
-  "views": [
+  "features": [
     {
-      "name": "Storage Billing View",
-      "type": "board_view",
-      "url": "https://your-app-url.com/board-view"
+      "type": "board-view",
+      "name": "Storage Billing",
+      "url": "https://localhost:8301/board_view.html",
+      "config": {
+        "height": 800,
+        "width": "100%"
+      }
+    },
+    {
+      "type": "dashboard-widget",
+      "name": "Billing Summary",
+      "url": "https://localhost:8301/index.html",
+      "config": {
+        "height": 400,
+        "width": 400
+      }
     }
   ],
-  "widgets": [
-    {
-      "name": "Billing Dashboard",
-      "type": "widget",
-      "url": "https://your-app-url.com/widget"
-    }
-  ]
+  "permissions": {
+    "boards": ["read", "write"],
+    "items": ["read", "write"],
+    "columns": ["read", "write"],
+    "users": ["read"]
+  }
 } 
