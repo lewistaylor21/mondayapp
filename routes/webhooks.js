@@ -320,6 +320,85 @@ router.post('/trigger-invoice-generation', async (req, res) => {
     }
 });
 
+// Handle button click for specific month calculation
+router.post('/calculate-specific-month', async (req, res) => {
+    try {
+        const { boardId, itemId, month, year } = req.body;
+        
+        console.log(`🔘 Button clicked: Calculate Specific Month for board ${boardId}`);
+        
+        if (!boardId) {
+            return res.status(400).json({ error: 'Board ID is required' });
+        }
+        
+        // If month and year are provided, calculate for that specific month
+        if (month !== undefined && year !== undefined) {
+            const targetMonth = parseInt(month);
+            const targetYear = parseInt(year);
+            
+            console.log(`🧮 Calculating billing for ${targetMonth + 1}/${targetYear}`);
+            
+            const billingResults = await billingService.updateMonthlyBillingColumn(boardId, targetMonth, targetYear);
+            
+            res.json({
+                success: true,
+                message: `Billing calculation completed for ${new Date(targetYear, targetMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}`,
+                billingResults,
+                month: targetMonth,
+                year: targetYear
+            });
+        } else {
+            // Return available months for selection
+            const months = [];
+            const currentDate = new Date();
+            
+            // Add past 6 months
+            for (let i = 6; i >= 1; i--) {
+                const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+                months.push({
+                    month: date.getMonth(),
+                    year: date.getFullYear(),
+                    label: date.toLocaleString('default', { month: 'long', year: 'numeric' }),
+                    isPast: true
+                });
+            }
+            
+            // Add current month
+            months.push({
+                month: currentDate.getMonth(),
+                year: currentDate.getFullYear(),
+                label: currentDate.toLocaleString('default', { month: 'long', year: 'numeric' }),
+                isCurrent: true
+            });
+            
+            // Add next 6 months
+            for (let i = 1; i <= 6; i++) {
+                const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+                months.push({
+                    month: date.getMonth(),
+                    year: date.getFullYear(),
+                    label: date.toLocaleString('default', { month: 'long', year: 'numeric' }),
+                    isFuture: true
+                });
+            }
+            
+            res.json({
+                success: true,
+                message: 'Please select a month for billing calculation',
+                availableMonths: months,
+                instructions: 'Send a POST request to this endpoint with month and year parameters to calculate billing for that specific month.'
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ Error handling specific month calculation:', error);
+        res.status(500).json({
+            error: 'Failed to handle specific month calculation',
+            message: error.message
+        });
+    }
+});
+
 // Health check for webhooks
 router.get('/health', (req, res) => {
     res.json({
@@ -328,7 +407,8 @@ router.get('/health', (req, res) => {
         webhooks: {
             monday: '/webhooks/monday',
             monthlyBilling: '/webhooks/trigger-monthly-billing',
-            invoiceGeneration: '/webhooks/trigger-invoice-generation'
+            invoiceGeneration: '/webhooks/trigger-invoice-generation',
+            specificMonth: '/webhooks/calculate-specific-month'
         }
     });
 });

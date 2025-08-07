@@ -1,0 +1,57 @@
+body {
+  margin: 0;
+  font-family: "Roboto", sans-serif;
+  overflow: visible !important;
+  height: auto !important;
+}
+
+html, #root {
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+.App {
+  width: 100%;
+  min-width: 1200px;
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+  /* Remove flex centering that might be constraining the layout */
+  display: block;
+  padding: 0;
+  margin: 0;
+}
+
+/* Ensure proper scrolling within Monday.com iframe */
+.comprehensive-billing-table {
+  width: 100%;
+  overflow: visible;
+}
+
+.comprehensive-billing-table-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-height: none !important;
+  height: auto !important;
+}
+
+/* Fixed column styling for horizontal scroll */
+.comprehensive-billing-table th:first-child,
+.comprehensive-billing-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background-color: inherit;
+  border-right: 2px solid #e1e5e9;
+}
+
+/* Sticky header that doesn't interfere with content */
+.comprehensive-billing-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e1e5e9;
+}

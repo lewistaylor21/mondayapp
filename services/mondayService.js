@@ -129,6 +129,11 @@ class MondayService {
                         parameters: {}
                     },
                     {
+                        label: 'Select Month & Calculate',
+                        action: 'calculate_specific_month',
+                        parameters: {}
+                    },
+                    {
                         label: 'Generate Invoice',
                         action: 'generate_invoice',
                         parameters: {}

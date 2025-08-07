@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 // Monday.com SDK loaded via CDN
 import './BoardView.css';
+import MonthSelector from './components/MonthSelector';
+import MonthlyBillingTable from './components/MonthlyBillingTable';
+import CalculateActionsPanel from './components/CalculateActionsPanel';
 
 // Initialize Monday.com SDK
 const monday = window.mondaySdk();
@@ -10,12 +13,22 @@ const BoardView = () => {
   const monday = window.mondaySdk();
   const [context, setContext] = useState(null);
   const [boardId, setBoardId] = useState(null);
+  const [boardData, setBoardData] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('info');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sdkStatus, setSdkStatus] = useState('Initializing...');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [monthSelectorOpen, setMonthSelectorOpen] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    scannedOut: 0,
+    totalBilling: 0
+  });
 
   useEffect(() => {
     // Initialize Monday.com app
@@ -90,6 +103,12 @@ const BoardView = () => {
             id
             name
             description
+            columns {
+              id
+              title
+              type
+              settings_str
+            }
             items_page(limit: 500) {
               cursor
               items {
@@ -139,7 +158,9 @@ const BoardView = () => {
         const boardItems = board.items_page.items;
         
         console.log(`Board: ${board.name}, Items found:`, boardItems.length);
+        setBoardData(board);
         setItems(boardItems);
+        calculateStats(boardItems);
         
         if (boardItems.length > 0) {
           showMessage(`Loaded ${boardItems.length} items from "${board.name}"`, 'success');
@@ -163,6 +184,27 @@ const BoardView = () => {
     setMessage(text);
     setMessageType(type);
     setTimeout(() => setMessage(''), 5000);
+  };
+
+  // Calculate statistics
+  const calculateStats = (items) => {
+    const newStats = {
+      total: items.length,
+      active: 0,
+      scannedOut: 0,
+      totalBilling: 0
+    };
+
+    items.forEach(item => {
+      const status = getColumnValue(item, 'Status');
+      const billing = parseFloat(getColumnValue(item, 'Current Month Billing') || 0);
+      
+      if (status === 'Active') newStats.active++;
+      if (status === 'Scanned Out') newStats.scannedOut++;
+      newStats.totalBilling += billing;
+    });
+
+    setStats(newStats);
   };
 
   // Real billing functions that call your backend
@@ -269,6 +311,103 @@ const BoardView = () => {
     }
   };
 
+  // Calculate specific month billing
+  const calculateSpecificMonthBilling = async (month, year) => {
+    if (!boardId) {
+      showMessage('No board selected', 'error');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const response = await fetch('https://b4869-service-17505803-baada5af.us.monday.app/api/billing/calculate-specific-month', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          boardId: boardId,
+          month: month,
+          year: year
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        showMessage(`Billing calculated successfully for ${result.monthName} ${result.year}!`, 'success');
+        // Refresh board data to show updated billing
+        loadRealBoardData(boardId);
+      } else {
+        showMessage('Error calculating billing: ' + result.error, 'error');
+      }
+    } catch (error) {
+      showMessage('Error calculating billing: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate last month billing
+  const calculateLastMonthBilling = async () => {
+    if (!boardId) {
+      showMessage('No board selected', 'error');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const response = await fetch('https://b4869-service-17505803-baada5af.us.monday.app/api/billing/calculate-last-month', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          boardId: boardId
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        showMessage('Last month billing calculated successfully!', 'success');
+        // Refresh board data to show updated billing
+        loadRealBoardData(boardId);
+      } else {
+        showMessage('Error calculating last month billing: ' + result.error, 'error');
+      }
+    } catch (error) {
+      showMessage('Error calculating last month billing: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle month selection change
+  const handleMonthChange = (month, year) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+  };
+
+  // Handle month selector calculate
+  const handleMonthSelectorCalculate = async (month, year) => {
+    await calculateSpecificMonthBilling(month, year);
+  };
+
+  // Handle refresh data
+  const handleRefreshData = () => {
+    if (boardId) {
+      loadRealBoardData(boardId);
+    }
+  };
+
+  // Open month selector
+  const openMonthSelector = () => {
+    setMonthSelectorOpen(true);
+  };
+
   // Get column value by title
   const getColumnValue = (item, columnTitle) => {
     const column = item.column_values.find(col => col.title === columnTitle);
@@ -277,91 +416,119 @@ const BoardView = () => {
 
   return (
     <div className="monday-board-view">
-      <div className="board-header">
-        <h1>🏢 Storage Billing Dashboard</h1>
-        <p>SDK Status: {sdkStatus}</p>
-        <p>Authentication: {isAuthenticated ? '✅ Connected' : '❌ Not Connected'}</p>
-        <p>Board ID: {boardId || 'Loading...'}</p>
+      {/* Header Section */}
+      <div className="board-header" style={{ padding: '20px', borderBottom: '1px solid #e1e5e9' }}>
+        <h1 style={{ margin: '0 0 10px 0', color: '#323338', fontSize: '24px' }}>
+          🏢 Monthly Storage Billing Dashboard
+        </h1>
+        <div style={{ display: 'flex', gap: '20px', fontSize: '14px', color: '#676879' }}>
+          <span>SDK Status: <strong>{sdkStatus}</strong></span>
+          <span>Authentication: {isAuthenticated ? '✅ Connected' : '❌ Not Connected'}</span>
+          <span>Board ID: {boardId || 'Loading...'}</span>
+          {boardData && <span>Board: <strong>{boardData.name}</strong></span>}
+        </div>
       </div>
 
+      {/* Message Display */}
       {message && (
-        <div className={`message ${messageType}`}>
+        <div className={`message ${messageType}`} style={{
+          padding: '12px 20px',
+          margin: '0',
+          backgroundColor: messageType === 'success' ? '#00c875' : 
+                           messageType === 'error' ? '#e2445c' : '#579bfc',
+          color: 'white',
+          fontSize: '14px'
+        }}>
           {message}
         </div>
       )}
 
-      <div className="action-buttons">
-        <button 
-          className="monday-button primary" 
-          onClick={calculateCurrentMonthBilling}
-          disabled={loading || !isAuthenticated}
-        >
-          {loading ? 'Calculating...' : 'Calculate Current Month Billing'}
-        </button>
-
-        <button 
-          className="monday-button primary" 
-          onClick={generateInvoices}
-          disabled={loading || !isAuthenticated}
-        >
-          {loading ? 'Generating...' : 'Generate Invoices'}
-        </button>
-
-        <button 
-          className="monday-button secondary" 
-          onClick={updateBillDates}
-          disabled={loading || !isAuthenticated}
-        >
-          {loading ? 'Updating...' : 'Update Bill Dates'}
-        </button>
-      </div>
-
-      <div className="board-stats">
-        <div className="stat-card">
-          <h3>Total Items</h3>
-          <p>{items.length}</p>
+      <div style={{ padding: '20px' }}>
+        {/* Month Selector Section */}
+        <div style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+          <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#323338' }}>
+            📅 Month Selection & Quick Actions
+          </h3>
+          <MonthSelector
+            boardId={boardId}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onMonthChange={handleMonthChange}
+            onCalculate={handleMonthSelectorCalculate}
+            loading={loading}
+            disabled={!isAuthenticated}
+          />
         </div>
-        <div className="stat-card">
-          <h3>Active Items</h3>
-          <p>{items.filter(item => getColumnValue(item, 'Status') === 'Active').length}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Scanned Out</h3>
-          <p>{items.filter(item => getColumnValue(item, 'Status') === 'Scanned Out').length}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Total Monthly Billing</h3>
-          <p>£{items.reduce((total, item) => {
-            const billing = parseFloat(getColumnValue(item, 'Current Month Billing')) || 0;
-            return total + billing;
-          }, 0).toFixed(2)}</p>
-        </div>
-      </div>
 
-      <div className="items-list">
-        <h2>Storage Items</h2>
-        {loading ? (
-          <div className="loading">Loading items...</div>
-        ) : items.length > 0 ? (
-          <div className="items-grid">
-            {items.map(item => (
-              <div key={item.id} className="item-card">
-                <h4>{item.name}</h4>
-                <div className="item-details">
-                  <p><strong>Status:</strong> {getColumnValue(item, 'Status')}</p>
-                  <p><strong>CBM:</strong> {getColumnValue(item, 'CBM')}</p>
-                  <p><strong>Rate:</strong> £{getColumnValue(item, 'Rate per CBM/Day')}/day</p>
-                  <p><strong>Date Received:</strong> {getColumnValue(item, 'Date Received')}</p>
-                  <p><strong>Bill Date:</strong> {getColumnValue(item, 'Bill Date')}</p>
-                  <p><strong>Current Month Billing:</strong> £{getColumnValue(item, 'Current Month Billing')}</p>
+        {/* Calculate Actions Panel */}
+        <div style={{ marginBottom: '30px' }}>
+          <CalculateActionsPanel
+            boardId={boardId}
+            onCalculateCurrentMonth={calculateCurrentMonthBilling}
+            onCalculateLastMonth={calculateLastMonthBilling}
+            onCalculateSpecificMonth={openMonthSelector}
+            onGenerateInvoices={generateInvoices}
+            onUpdateBillDates={updateBillDates}
+            onRefreshData={handleRefreshData}
+            loading={loading}
+            disabled={!isAuthenticated}
+            stats={stats}
+          />
+        </div>
+
+        {/* Monthly Billing Table */}
+        <div style={{ marginBottom: '30px' }}>
+          <MonthlyBillingTable
+            items={items}
+            boardData={boardData}
+            loading={loading}
+            onRefresh={handleRefreshData}
+            showMonthlyColumns={true}
+          />
+        </div>
+
+        {/* Quick Stats Section */}
+        {items.length > 0 && (
+          <div style={{ 
+            marginTop: '30px',
+            padding: '20px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e1e5e9',
+            borderRadius: '8px'
+          }}>
+            <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#323338' }}>
+              📊 Quick Statistics
+            </h3>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+              gap: '15px'
+            }}>
+              <div style={{ textAlign: 'center', padding: '10px' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4285f4' }}>
+                  {stats.total}
                 </div>
+                <div style={{ fontSize: '14px', color: '#676879' }}>Total Items</div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="no-items">
-            <p>No items found on this board.</p>
-            <p>Add storage items to get started with billing calculations.</p>
+              <div style={{ textAlign: 'center', padding: '10px' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00c875' }}>
+                  {stats.active}
+                </div>
+                <div style={{ fontSize: '14px', color: '#676879' }}>Active Items</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '10px' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#e2445c' }}>
+                  {stats.scannedOut}
+                </div>
+                <div style={{ fontSize: '14px', color: '#676879' }}>Scanned Out</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '10px' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#323338' }}>
+                  £{stats.totalBilling.toFixed(2)}
+                </div>
+                <div style={{ fontSize: '14px', color: '#676879' }}>Current Month Total</div>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -4,7 +4,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
   entry: {
     index: './src/index.js',
-    board_view: './src/board_view.js'
+    board_view: './src/board_view_vanilla.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
