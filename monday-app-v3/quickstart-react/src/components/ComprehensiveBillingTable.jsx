@@ -14,32 +14,72 @@ const ComprehensiveBillingTable = ({
 }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-  // Enhanced column value helper with debugging
+  // Enhanced column value helper - simplified for better performance
   const getColumnValue = (item, columnTitle) => {
     if (!boardData?.columns || !item.column_values) {
-      console.log(`getColumnValue: Missing data for ${columnTitle}`);
       return '';
     }
     
     const column = boardData.columns.find(col => col.title === columnTitle);
     if (!column) {
-      // Log available columns for debugging
-      console.log(`Column "${columnTitle}" not found. Available columns:`, 
-        boardData.columns.map(c => c.title));
       return '';
     }
     
     const columnValue = item.column_values.find(cv => cv.id === column.id);
     const result = columnValue ? (columnValue.text || columnValue.value || '') : '';
     
-    console.log(`getColumnValue(${item.name}, ${columnTitle}):`, {
-      found: !!column,
-      columnId: column.id,
-      rawValue: columnValue,
-      result: result
-    });
+    // Only log for important values or debugging
+    if (columnTitle.includes('Jul 2025') && result && result !== '0' && result !== '') {
+      console.log(`✅ Found ${columnTitle} for ${item.name}: ${result}`);
+    }
     
     return result;
+  };
+
+  // Special function to debug Bill Start Date formula column
+  const getBillStartDate = (item) => {
+    console.log(`=== DEBUGGING BILL START DATE for ${item.name} ===`);
+    
+    // Try different possible column names
+    const possibleNames = [
+      'Billing start date',
+      'Bill start date', 
+      'Bill Start Date',
+      'Billing Start Date'
+    ];
+    
+    possibleNames.forEach(name => {
+      const value = getColumnValue(item, name);
+      console.log(`Tried "${name}": "${value}"`);
+    });
+    
+    // Try to find any column with "bill" or "start" in the name
+    if (boardData?.columns) {
+      const billColumns = boardData.columns.filter(col => 
+        col.title.toLowerCase().includes('bill') || 
+        col.title.toLowerCase().includes('start')
+      );
+      console.log('Columns containing "bill" or "start":', billColumns.map(c => ({
+        title: c.title,
+        type: c.type,
+        id: c.id
+      })));
+      
+      // Check the raw data for these columns
+      billColumns.forEach(col => {
+        const columnValue = item.column_values.find(cv => cv.id === col.id);
+        console.log(`Raw data for "${col.title}" (${col.type}):`, columnValue);
+      });
+    }
+    
+    // If formula column doesn't work, calculate it ourselves
+    const calculatedDate = calculateBillStartDate(item);
+    console.log('Fallback calculated date:', calculatedDate);
+    
+    console.log(`=== END DEBUGGING for ${item.name} ===`);
+    
+    // For now, return our calculated version
+    return calculatedDate;
   };
 
   // Calculate Bill Start Date (Date Received + Free Days)
@@ -88,16 +128,18 @@ const ComprehensiveBillingTable = ({
     return 0;
   };
 
-  // Calculate live price to date (total from bill start to current day)
+  // Calculate live price to date (total from bill start to current day OR scan out date)
   const calculateLivePriceToDate = (item) => {
     const billStartDate = calculateBillStartDate(item);
     const rate = getRateValue(item);
     const cbm = parseFloat(getColumnValue(item, 'CBM') || 0);
+    const scanOutDate = getColumnValue(item, 'Date Out');
     
     console.log(`Calculating Live Price for ${item.name}:`, {
       billStartDate,
       rate,
-      cbm
+      cbm,
+      scanOutDate
     });
     
     if (!billStartDate || !rate || !cbm) {
@@ -108,11 +150,22 @@ const ComprehensiveBillingTable = ({
     try {
       const startDate = new Date(billStartDate);
       const today = new Date();
-      const timeDiff = today.getTime() - startDate.getTime();
+      
+      // Determine end date: if scanned out, use scan out date, otherwise use today
+      let endDate = today;
+      if (scanOutDate && scanOutDate !== '' && scanOutDate !== '-') {
+        const parsedScanOutDate = new Date(scanOutDate);
+        if (!isNaN(parsedScanOutDate.getTime())) {
+          endDate = parsedScanOutDate;
+          console.log(`Item ${item.name} scanned out on ${scanOutDate}, using as end date`);
+        }
+      }
+      
+      const timeDiff = endDate.getTime() - startDate.getTime();
       const daysDiff = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
       
       const livePrice = daysDiff * rate * cbm;
-      console.log(`Live Price calculation for ${item.name}: ${daysDiff} days × £${rate} × ${cbm} CBM = £${livePrice.toFixed(2)}`);
+      console.log(`Live Price calculation for ${item.name}: ${daysDiff} days × £${rate} × ${cbm} CBM = £${livePrice.toFixed(2)} (End: ${endDate.toDateString()})`);
       
       return livePrice;
     } catch (error) {
@@ -121,16 +174,18 @@ const ComprehensiveBillingTable = ({
     }
   };
 
-  // Calculate current month price to date (from start of current month to today)
+  // Calculate current month price to date (from start of current month to today OR scan out date)
   const calculateCurrentMonthPriceToDate = (item) => {
     const billStartDate = calculateBillStartDate(item);
     const rate = getRateValue(item);
     const cbm = parseFloat(getColumnValue(item, 'CBM') || 0);
+    const scanOutDate = getColumnValue(item, 'Date Out');
     
     console.log(`Calculating Current Month Price for ${item.name}:`, {
       billStartDate,
       rate,
-      cbm
+      cbm,
+      scanOutDate
     });
     
     if (!billStartDate || !rate || !cbm) {
@@ -142,15 +197,37 @@ const ComprehensiveBillingTable = ({
       const startDate = new Date(billStartDate);
       const today = new Date();
       const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       
       // Use the later of bill start date or current month start
       const effectiveStartDate = startDate > currentMonthStart ? startDate : currentMonthStart;
       
-      const timeDiff = today.getTime() - effectiveStartDate.getTime();
+      // Determine end date for current month calculation
+      let effectiveEndDate = today;
+      
+      // If item is scanned out
+      if (scanOutDate && scanOutDate !== '' && scanOutDate !== '-') {
+        const parsedScanOutDate = new Date(scanOutDate);
+        if (!isNaN(parsedScanOutDate.getTime())) {
+          // Check if scan out date is in current month
+          if (parsedScanOutDate >= currentMonthStart && parsedScanOutDate <= currentMonthEnd) {
+            // Scan out is in current month - calculate to scan out date
+            effectiveEndDate = parsedScanOutDate;
+            console.log(`Item ${item.name} scanned out in current month (${scanOutDate}), calculating to scan out date`);
+          } else if (parsedScanOutDate < currentMonthStart) {
+            // Scan out was before current month - no current month billing
+            console.log(`Item ${item.name} scanned out before current month (${scanOutDate}), no current month billing`);
+            return 0;
+          }
+          // If scan out is after current month, use today as normal
+        }
+      }
+      
+      const timeDiff = effectiveEndDate.getTime() - effectiveStartDate.getTime();
       const daysDiff = Math.max(0, Math.ceil(timeDiff / (1000 * 3600 * 24)));
       
       const currentMonthPrice = daysDiff * rate * cbm;
-      console.log(`Current Month calculation for ${item.name}: ${daysDiff} days × £${rate} × ${cbm} CBM = £${currentMonthPrice.toFixed(2)}`);
+      console.log(`Current Month calculation for ${item.name}: ${daysDiff} days × £${rate} × ${cbm} CBM = £${currentMonthPrice.toFixed(2)} (Start: ${effectiveStartDate.toDateString()}, End: ${effectiveEndDate.toDateString()})`);
       
       return currentMonthPrice;
     } catch (error) {
@@ -159,11 +236,64 @@ const ComprehensiveBillingTable = ({
     }
   };
 
-  // Get monthly column value
+  // Enhanced function to show ALL available columns for debugging
+  const debugAllColumns = () => {
+    if (boardData?.columns) {
+      console.log('=== ALL MONDAY.COM BOARD COLUMNS ===');
+      boardData.columns.forEach((col, index) => {
+        console.log(`${index + 1}. "${col.title}" (Type: ${col.type}, ID: ${col.id})`);
+      });
+      console.log('=== END COLUMN LIST ===');
+    }
+  };
+
+  // Get monthly column value with simplified and accurate column matching
   const getMonthlyColumnValue = (item, monthYear) => {
-    const columnTitle = `${monthYear} Billing`;
-    const value = getColumnValue(item, columnTitle);
-    return value ? parseFloat(value) : 0;
+    // Try exact column name format first (this is the most likely format)
+    const exactColumnName = `${monthYear} Billing`;  // e.g., "Jul 2025 Billing"
+    
+    // First try the exact match
+    let value = getColumnValue(item, exactColumnName);
+    if (value && value !== '' && value !== '-' && value !== 'null') {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed) && parsed >= 0) {  // Allow zero values
+        return parsed;
+      }
+    }
+    
+    // If exact match fails, try alternative formats
+    const alternativeColumnNames = [
+      monthYear,                         // "Jul 2025"
+      `${monthYear}`,                   // "Jul 2025"
+      `${monthYear.replace(' ', '')}`,  // "Jul2025"
+    ];
+    
+    for (const columnName of alternativeColumnNames) {
+      value = getColumnValue(item, columnName);
+      if (value && value !== '' && value !== '-' && value !== 'null') {
+        const parsed = parseFloat(value);
+        if (!isNaN(parsed) && parsed >= 0) {  // Allow zero values
+          return parsed;
+        }
+      }
+    }
+    
+    // Debug for the first item to understand what columns exist
+    if (item === sortedItems[0] && monthYear === 'Jul 2025') {
+      console.log(`🔍 Looking for July 2025 data. Tried: "${exactColumnName}"`);
+      console.log('📋 Available monthly billing columns:');
+      if (boardData?.columns) {
+        const monthlyColumns = boardData.columns.filter(col => 
+          col.title.toLowerCase().includes('billing') ||
+          col.title.includes('2025')
+        );
+        monthlyColumns.forEach(col => {
+          console.log(`   - "${col.title}" (ID: ${col.id})`);
+        });
+      }
+    }
+    
+    return 0;
   };
 
   // Generate monthly columns for current year
@@ -399,7 +529,7 @@ const ComprehensiveBillingTable = ({
                 </td>
                 
                 <td style={{ padding: '10px 6px', textAlign: 'center' }}>
-                  <Text size="small">{formatDate(getColumnValue(item, 'Billing Start Date'))}</Text>
+                  <Text size="small">{formatDate(getBillStartDate(item))}</Text>
                 </td>
                 
                 <td style={{ padding: '10px 6px', textAlign: 'right' }}>

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "monday-api-mcp": {
+      "command": "npx",
+      "args": [
+        "@mondaydotcomorg/monday-api-mcp",
+        "-t",
+        "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjMyNzExMzc4OCwiYWFpIjoxMSwidWlkIjo0NDg1MzkyOSwiaWFkIjoiMjAyNC0wMi0yOVQxNDoyMDo0MS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTc1MDU4MDMsInJnbiI6ImV1YzEifQ.8G2P2KFUk0jjw1oRmYy-Gj-toiB1Lyj_kyllKvCU5T0"
+      ],
+      "env": {}
+    }
+  }
+}

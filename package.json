@@ -18,7 +18,10 @@
     "single-item": "node singleItemBilling.js",
     "storage": "node storageBillingCalculator.js",
     "generate-test": "node generateTestData.js",
-    "create-test": "node createTestItems.js"
+    "create-test": "node createTestItems.js",
+    "setup-2025-columns": "node create-2025-billing-columns.js",
+    "validate-board": "node validate-board-setup.js",
+    "mcp-july": "node scripts/mcpJulyCalculation.js"
   },
   "keywords": [
     "monday.com",
