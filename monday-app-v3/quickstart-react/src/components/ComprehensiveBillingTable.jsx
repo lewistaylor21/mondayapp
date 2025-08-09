@@ -10,7 +10,8 @@ const ComprehensiveBillingTable = ({
   items = [], 
   boardData = null, 
   loading = false,
-  onRefresh 
+  onRefresh, 
+  onClearMonth
 }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
@@ -278,20 +279,7 @@ const ComprehensiveBillingTable = ({
       }
     }
     
-    // Debug for the first item to understand what columns exist
-    if (item === sortedItems[0] && monthYear === 'Jul 2025') {
-      console.log(`🔍 Looking for July 2025 data. Tried: "${exactColumnName}"`);
-      console.log('📋 Available monthly billing columns:');
-      if (boardData?.columns) {
-        const monthlyColumns = boardData.columns.filter(col => 
-          col.title.toLowerCase().includes('billing') ||
-          col.title.includes('2025')
-        );
-        monthlyColumns.forEach(col => {
-          console.log(`   - "${col.title}" (ID: ${col.id})`);
-        });
-      }
-    }
+    // Avoid referencing sortedItems here; return 0 if not found
     
     return 0;
   };
@@ -402,23 +390,10 @@ const ComprehensiveBillingTable = ({
         )}
       </Flex>
 
-      {/* Table Container with full width and proper scrolling */}
-      <Box 
-        className="comprehensive-billing-table-container"
-        style={{ 
-          width: '100%', 
-          overflowX: 'auto',
-          overflowY: 'visible',
-          border: '1px solid #e1e5e9', 
-          borderRadius: '8px',
-          backgroundColor: 'white',
-          maxHeight: 'none',
-          height: 'auto',
-          position: 'relative'
-        }}>
+      {/* Table without inner scroll; allow host/page scrollbar */}
+      <Box className="comprehensive-billing-table-container" style={{ width: '100%', border: '1px solid #e1e5e9', borderRadius: '8px', backgroundColor: 'white' }}>
         <table style={{ 
-          width: '100%', 
-          minWidth: '1400px', // Ensure minimum width for all columns
+          width: 'max-content',
           borderCollapse: 'collapse', 
           fontSize: '12px',
           tableLayout: 'fixed'
@@ -496,7 +471,25 @@ const ComprehensiveBillingTable = ({
                   }}
                   onClick={() => handleSort(`monthly_${col.key}`)}
                 >
-                  <Text size="small" weight="bold">{col.label}</Text>
+                  <Flex justify="space-between" align="center" gap="xs">
+                    <Text size="small" weight="bold">{col.label}</Text>
+                    {onClearMonth && (
+                      <button
+                        aria-label={`Clear ${col.label}`}
+                        onClick={(e) => { e.stopPropagation(); onClearMonth(col.key); }}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#e2445c',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                        }}
+                        title={`Clear ${col.label}`}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </Flex>
                 </th>
               ))}
             </tr>

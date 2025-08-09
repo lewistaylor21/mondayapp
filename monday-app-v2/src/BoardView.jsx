@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import './BoardView.css';
 import MonthSelector from './components/MonthSelector';
 import MonthlyBillingTable from './components/MonthlyBillingTable';
+import ErrorBoundary from './components/ErrorBoundary';
 import CalculateActionsPanel from './components/CalculateActionsPanel';
 
 // Initialize Monday.com SDK
@@ -29,6 +30,7 @@ const BoardView = () => {
     scannedOut: 0,
     totalBilling: 0
   });
+  const [monthSelectorOpen, setMonthSelectorOpen] = useState(false);
 
   useEffect(() => {
     // Initialize Monday.com app
@@ -403,6 +405,9 @@ const BoardView = () => {
     }
   };
 
+  const openMonthSelector = () => setMonthSelectorOpen(true);
+  const closeMonthSelector = () => setMonthSelectorOpen(false);
+
   // Open month selector
   const openMonthSelector = () => {
     setMonthSelectorOpen(true);
@@ -457,6 +462,8 @@ const BoardView = () => {
             onCalculate={handleMonthSelectorCalculate}
             loading={loading}
             disabled={!isAuthenticated}
+            isOpen={monthSelectorOpen}
+            onClose={closeMonthSelector}
           />
         </div>
 
@@ -473,18 +480,22 @@ const BoardView = () => {
             loading={loading}
             disabled={!isAuthenticated}
             stats={stats}
+            onOpenMonthSelector={openMonthSelector}
           />
         </div>
 
         {/* Monthly Billing Table */}
         <div style={{ marginBottom: '30px' }}>
-          <MonthlyBillingTable
-            items={items}
-            boardData={boardData}
-            loading={loading}
-            onRefresh={handleRefreshData}
-            showMonthlyColumns={true}
-          />
+          <ErrorBoundary fallbackText="Failed to render monthly billing table.">
+            <MonthlyBillingTable
+              items={items}
+              boardData={boardData}
+              loading={loading}
+              onRefresh={handleRefreshData}
+              showMonthlyColumns={true}
+            />
+          </ErrorBoundary>
+
         </div>
 
         {/* Quick Stats Section */}

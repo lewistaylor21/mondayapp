@@ -34,11 +34,13 @@ const MonthlyBillingTable = ({
 
   // Extract monthly billing columns from board data
   useEffect(() => {
-    if (boardData && boardData.columns) {
+    if (boardData && Array.isArray(boardData.columns)) {
       const monthlyBillingCols = boardData.columns
-        .filter(col => col.title.includes('Billing') && col.title.includes('202'))
-        .sort((a, b) => a.title.localeCompare(b.title));
+        .filter(col => typeof col?.title === 'string' && col.title.includes('Billing') && col.title.match(/20\d{2}/))
+        .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
       setMonthlyColumns(monthlyBillingCols);
+    } else {
+      setMonthlyColumns([]);
     }
   }, [boardData]);
 

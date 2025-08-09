@@ -37,7 +37,8 @@ const CalculateActionsPanel = ({
   onRefreshData,
   loading = false,
   disabled = false,
-  stats = {}
+  stats = {},
+  onOpenMonthSelector
 }) => {
   const [quickActionLoading, setQuickActionLoading] = useState(null);
 
@@ -126,7 +127,7 @@ const CalculateActionsPanel = ({
         
         <Flex gap={Flex.gaps.MEDIUM} wrap>
           <Button
-            onClick={() => handleQuickAction('current', onCalculateCurrentMonth)}
+            onClick={onOpenMonthSelector}
             leftIcon={Calendar}
             kind={Button.kinds.PRIMARY}
             size={Button.sizes.MEDIUM}
@@ -134,7 +135,7 @@ const CalculateActionsPanel = ({
             disabled={disabled || !boardId}
             style={{ minWidth: '200px' }}
           >
-            Calculate Current Month
+            Calculate Month
           </Button>
 
           <Button
@@ -149,16 +150,7 @@ const CalculateActionsPanel = ({
             Calculate Last Month
           </Button>
 
-          <Button
-            onClick={onCalculateSpecificMonth}
-            leftIcon={Chart}
-            kind={Button.kinds.TERTIARY}
-            size={Button.sizes.MEDIUM}
-            disabled={disabled || !boardId}
-            style={{ minWidth: '200px' }}
-          >
-            Select Month & Calculate
-          </Button>
+          {/* Removed separate select month button; main button opens selector */}
         </Flex>
       </Box>
 

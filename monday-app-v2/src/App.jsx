@@ -39,6 +39,7 @@ import {
   Info
 } from 'monday-ui-react-core/icons';
 import './App.css';
+import MonthSelector from './components/MonthSelector';
 
 // Initialize Monday SDK
 const monday = window.mondaySdk();
@@ -61,6 +62,9 @@ const App = () => {
     scannedOut: 0,
     totalBilling: 0
   });
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [monthSelectorOpen, setMonthSelectorOpen] = useState(false);
 
   // Initialize Monday context
   useEffect(() => {
@@ -218,6 +222,53 @@ const App = () => {
   const showToast = (message, type = 'normal') => {
     setToastMessage({ message, type });
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  // Month selector helpers
+  const openMonthSelector = () => setMonthSelectorOpen(true);
+  const closeMonthSelector = () => setMonthSelectorOpen(false);
+  const handleMonthChange = (month, year) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+  };
+
+  const calculateSpecificMonthBilling = async (month, year) => {
+    if (!context.boardId) {
+      showToast('No board selected', 'negative');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('https://b4869-service-17505803-baada5af.us.monday.app/api/billing/calculate-specific-month', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          boardId: context.boardId,
+          month,
+          year
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        showToast(`Billing calculated for ${result.monthName} ${result.year}`, 'positive');
+        await loadBoardData(context.boardId);
+      } else {
+        showToast('Error calculating billing: ' + (result.error || 'Unknown error'), 'negative');
+      }
+    } catch (error) {
+      showToast('Error calculating billing: ' + error.message, 'negative');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMonthSelectorCalculate = async (month, year) => {
+    await calculateSpecificMonthBilling(month, year);
+    closeMonthSelector();
   };
 
   // Calculate billing
@@ -381,14 +432,14 @@ const App = () => {
           {/* Action Buttons */}
           <Flex gap={Flex.gaps.SMALL}>
             <Button
-              onClick={handleCalculateBilling}
-              leftIcon={Chart}
+              onClick={openMonthSelector}
+              leftIcon={Calendar}
               loading={loading}
               kind={Button.kinds.PRIMARY}
               size={Button.sizes.MEDIUM}
               disabled={!isAuthenticated}
             >
-              Calculate Current Month
+              Calculate Month
             </Button>
             <Button
               onClick={handleGenerateInvoices}
@@ -536,6 +587,19 @@ const App = () => {
           {toastMessage.message}
         </Toast>
       )}
+
+      {/* Month Selector Modal */}
+      <MonthSelector
+        boardId={context.boardId}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        onMonthChange={handleMonthChange}
+        onCalculate={handleMonthSelectorCalculate}
+        loading={loading}
+        disabled={!isAuthenticated}
+        isOpen={monthSelectorOpen}
+        onClose={closeMonthSelector}
+      />
     </div>
   );
 };

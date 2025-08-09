@@ -23,7 +23,9 @@ const MonthSelector = ({
   onMonthChange, 
   onCalculate,
   loading = false,
-  disabled = false 
+  disabled = false,
+  isOpen = false,
+  onClose
 }) => {
   const [availableMonths, setAvailableMonths] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,6 +40,10 @@ const MonthSelector = ({
       loadAvailableMonths();
     }
   }, [boardId]);
+
+  useEffect(() => {
+    setIsModalOpen(Boolean(isOpen));
+  }, [isOpen]);
 
   const loadAvailableMonths = async () => {
     setLoadingMonths(true);
@@ -67,6 +73,7 @@ const MonthSelector = ({
       await onCalculate(currentSelection.month, currentSelection.year);
     }
     setIsModalOpen(false);
+    if (onClose) onClose();
   };
 
   const formatMonthLabel = (month, year) => {
@@ -129,7 +136,7 @@ const MonthSelector = ({
 
       <Modal
         show={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false); if (onClose) onClose(); }}
         width="600px"
         title="Select Month for Billing Calculation"
       >

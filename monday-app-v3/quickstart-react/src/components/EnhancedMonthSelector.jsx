@@ -13,6 +13,7 @@ const EnhancedMonthSelector = ({
   onCalculateCurrentMonth,
   onCalculateSelectedMonth,
   loading = false,
+  calculating = false,
   disabled = false 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,6 +49,10 @@ const EnhancedMonthSelector = ({
   const handleMonthSelect = (month, year) => {
     setCurrentSelection({ month, year });
     setIsOpen(false);
+    // Auto-run calculation immediately to avoid second click
+    if (onCalculateSelectedMonth) {
+      onCalculateSelectedMonth(month, year);
+    }
   };
 
   const handleCalculateSelected = async () => {
@@ -69,28 +74,21 @@ const EnhancedMonthSelector = ({
       {/* Main Action Buttons */}
       <Flex gap="medium" wrap style={{ marginBottom: "16px" }}>
         <Button 
-          onClick={onCalculateCurrentMonth}
-          loading={loading}
-          disabled={disabled || !boardId}
+          type="button"
+          onClick={(e) => { e.preventDefault(); setIsOpen(true); }}
+          loading={loading || calculating}
+          disabled={disabled || !boardId || calculating}
           kind="primary"
           size="medium"
         >
-          📊 Calculate Current Month End
+          📊 Calculate Month
         </Button>
         
         <Button 
-          onClick={() => setIsOpen(!isOpen)}
-          disabled={disabled || !boardId}
-          kind="secondary" 
-          size="medium"
-        >
-          📅 Select Future Month ▼
-        </Button>
-        
-        <Button 
-          onClick={handleCalculateSelected}
-          loading={loading}
-          disabled={disabled || !boardId || currentSelection.month === undefined}
+          type="button"
+          onClick={(e) => { e.preventDefault(); handleCalculateSelected(); }}
+          loading={loading || calculating}
+          disabled={disabled || !boardId || currentSelection.month === undefined || calculating}
           kind="tertiary"
           size="medium"
         >
